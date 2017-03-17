@@ -10103,6 +10103,15 @@ var _elm_lang$html$Html_Events$Options = F2(
 		return {stopPropagation: a, preventDefault: b};
 	});
 
+var _user$project$Main$recordTitle = function (record) {
+	return A2(
+		_elm_lang$core$Basics_ops['++'],
+		'State Machine:\n  ',
+		A2(
+			_elm_lang$core$Basics_ops['++'],
+			record.stateMachineArn,
+			A2(_elm_lang$core$Basics_ops['++'], '\n\nActivity:\n  ', record.activityArn)));
+};
 var _user$project$Main$encodeAnswer = function (answer) {
 	return _elm_lang$core$Json_Encode$object(
 		{
@@ -10253,7 +10262,12 @@ var _user$project$Main$displayRecord = F2(
 				ctor: '::',
 				_0: A2(
 					_elm_lang$html$Html$td,
-					{ctor: '[]'},
+					{
+						ctor: '::',
+						_0: _elm_lang$html$Html_Attributes$title(
+							_user$project$Main$recordTitle(record)),
+						_1: {ctor: '[]'}
+					},
 					{
 						ctor: '::',
 						_0: _elm_lang$html$Html$text(
