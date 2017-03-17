@@ -3,9 +3,16 @@ port module Main exposing (..)
 import Html
 import Html.Attributes
 import Html.Events
+import Json.Encode as Encode
 
 
 -- Model
+
+
+type alias Flags =
+    { email : Maybe String
+    , bearer : Maybe String
+    }
 
 
 type alias Record =
@@ -37,10 +44,10 @@ type Msg
 -- Init
 
 
-init : ( Model, Cmd Msg )
-init =
-    { email = ""
-    , bearer = Nothing
+init : Flags -> ( Model, Cmd Msg )
+init flags =
+    { email = Maybe.withDefault "" flags.email
+    , bearer = flags.bearer
     , records = Nothing
     }
         ! []
@@ -52,9 +59,7 @@ init =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.batch
-        [ authenticated BearerTokenRetrieved
-        ]
+    Sub.none
 
 
 
@@ -65,10 +70,10 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
     case message of
         NewEmail email ->
-            { model | email = email } ! []
+            { model | email = email } ! [ saveData { key = "email", value = Encode.string email } ]
 
         Authenticate ->
-            model ! []
+            model ! [ authenticate model.email ]
 
         BearerTokenRetrieved bearer ->
             { model | bearer = Just bearer } ! []
@@ -97,6 +102,7 @@ formView model =
                                 [ Html.Attributes.class "form-control"
                                 , Html.Attributes.id "fp_email"
                                 , Html.Attributes.placeholder "john.doe@tld.com"
+                                , Html.Attributes.value model.email
                                 , Html.Events.onInput NewEmail
                                 ]
                                 []
@@ -104,6 +110,7 @@ formView model =
                         ]
                     , Html.button
                         [ Html.Attributes.class "login-button"
+                        , Html.Attributes.type_ "submit"
                         ]
                         [ Html.i [ Html.Attributes.class "fa fa-chevron-right" ] [] ]
                     ]
@@ -137,7 +144,7 @@ view model =
 
 
 main =
-    Html.program
+    Html.programWithFlags
         { init = init
         , subscriptions = subscriptions
         , update = update
@@ -152,4 +159,8 @@ main =
 port authenticate : String -> Cmd msg
 
 
-port authenticated : (String -> msg) -> Sub msg
+
+-- Save data
+
+
+port saveData : { key : String, value : Encode.Value } -> Cmd msg
