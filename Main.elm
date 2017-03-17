@@ -1,5 +1,6 @@
 port module Main exposing (..)
 
+import HttpBuilder
 import Html
 import Html.Attributes
 import Html.Events
@@ -28,22 +29,26 @@ collection =
 -- Model
 
 
+type alias Url =
+    String
+
+
 type alias Flags =
     { email : Maybe String
-    , bearer : Bearer
+    , bearer : Maybe Bearer
     }
 
 
 type alias Model =
     { email : String
-    , bearer : Bearer
+    , bearer : Maybe Bearer
     , records : Maybe (List Record)
     , error : Maybe String
     }
 
 
 type alias Bearer =
-    Maybe String
+    String
 
 
 type alias RecordId =
@@ -70,6 +75,9 @@ type Msg
     | LoadRecords
     | FetchRecordsResponse (Result Kinto.Error (List Record))
     | Logout
+    | AcceptStep String
+    | RejectStep String
+    | AnswerResponse (Result Kinto.Error ())
 
 
 
@@ -137,12 +145,78 @@ update message model =
             }
                 ! [ saveData { key = "bearer", value = Encode.null } ]
 
+        AcceptStep recordId ->
+            case model.bearer of
+                Nothing ->
+                    model ! []
+
+                Just bearer ->
+                    model ! [ answerStep bearer recordId "succeed" ]
+
+        RejectStep recordId ->
+            case model.bearer of
+                Nothing ->
+                    model ! []
+
+                Just bearer ->
+                    model ! [ answerStep bearer recordId "fail" ]
+
+        AnswerResponse (Err error) ->
+            { model | error = Just <| toString error } ! []
+
+        AnswerResponse (Ok _) ->
+            case model.bearer of
+                Nothing ->
+                    model ! []
+
+                Just bearer ->
+                    model ! [ fetchRecordList bearer ]
+
 
 
 -- Kinto related
 
 
-fetchRecordList : String -> Cmd Msg
+answerUrl : String -> String -> String -> String -> Url
+answerUrl baseUrl bucketName collectionName recordId =
+    let
+        url =
+            if String.endsWith "/" baseUrl then
+                String.dropRight 1 baseUrl
+            else
+                baseUrl
+
+        joinUrl =
+            String.join "/"
+    in
+        joinUrl [ url, "buckets", bucketName, "collections", collectionName, "records", recordId, "stepfunction" ]
+
+
+answerResource : String -> String -> String -> Encode.Value -> Kinto.Client -> HttpBuilder.RequestBuilder ()
+answerResource bucketName collectionName recordId body client =
+    answerUrl client.baseUrl bucketName collectionName recordId
+        |> HttpBuilder.post
+        |> HttpBuilder.withHeaders client.headers
+        |> HttpBuilder.withJsonBody body
+
+
+encodeAnswer : String -> Encode.Value
+encodeAnswer answer =
+    Encode.object [ ( "answer", Encode.string answer ) ]
+
+
+answerStep : Bearer -> RecordId -> String -> Cmd Msg
+answerStep bearer recordId answer =
+    let
+        client =
+            Kinto.client kintoServer (Kinto.Custom "Portier" bearer)
+    in
+        client
+            |> answerResource bucket collection recordId (encodeAnswer answer)
+            |> Kinto.send AnswerResponse
+
+
+fetchRecordList : Bearer -> Cmd Msg
 fetchRecordList bearer =
     let
         client =
@@ -220,7 +294,7 @@ displayRecords model records =
                     [ Html.tr []
                         [ Html.th [] [ Html.text "Subject" ]
                         , Html.th [] [ Html.text "Status" ]
-                          -- Maybe.withDefault "UNANSWERED" Html.status]
+                        , Html.th [] [ Html.text "Actions" ]
                         ]
                     ]
                 , Html.tbody [] <| List.map (displayRecord model) records
@@ -235,6 +309,20 @@ displayRecord model record =
     Html.tr []
         [ Html.td [] [ Html.text (Maybe.withDefault record.id record.subject) ]
         , Html.td [] [ Html.text (String.toUpper (Maybe.withDefault "UNANSWERED" record.status)) ]
+        , Html.td []
+            [ Html.div [ Html.Attributes.class "btn-group" ]
+                [ Html.button
+                    [ Html.Attributes.class "btn btn-success"
+                    , Html.Events.onClick (AcceptStep record.id)
+                    ]
+                    [ Html.text "Accept" ]
+                , Html.button
+                    [ Html.Attributes.class "btn btn-danger"
+                    , Html.Events.onClick (RejectStep record.id)
+                    ]
+                    [ Html.text "Reject" ]
+                ]
+            ]
         ]
 
 
