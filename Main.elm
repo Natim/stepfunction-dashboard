@@ -3,7 +3,26 @@ port module Main exposing (..)
 import Html
 import Html.Attributes
 import Html.Events
+import Json.Decode as Decode
 import Json.Encode as Encode
+import Kinto
+
+
+-- Settings
+-- If you change the kintoServer there you want to change it in ports.js too.
+
+
+kintoServer =
+    "https://kinto.dev.mozaws.net/v1/"
+
+
+bucket =
+    "stepfunction"
+
+
+collection =
+    "manual_steps"
+
 
 
 -- Model
@@ -11,22 +30,33 @@ import Json.Encode as Encode
 
 type alias Flags =
     { email : Maybe String
-    , bearer : Maybe String
-    }
-
-
-type alias Record =
-    { subject : String
-    , activityArn : String
-    , status : String
-    , stateMachineArn : String
+    , bearer : Bearer
     }
 
 
 type alias Model =
     { email : String
-    , bearer : Maybe String
+    , bearer : Bearer
     , records : Maybe (List Record)
+    , error : Maybe String
+    }
+
+
+type alias Bearer =
+    Maybe String
+
+
+type alias RecordId =
+    String
+
+
+type alias Record =
+    { id : RecordId
+    , last_modified : Int
+    , subject : Maybe String
+    , stateMachineArn : String
+    , activityArn : String
+    , status : Maybe String
     }
 
 
@@ -37,7 +67,9 @@ type alias Model =
 type Msg
     = NewEmail String
     | Authenticate
-    | BearerTokenRetrieved String
+    | LoadRecords
+    | FetchRecordsResponse (Result Kinto.Error (List Record))
+    | Logout
 
 
 
@@ -46,11 +78,15 @@ type Msg
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    { email = Maybe.withDefault "" flags.email
-    , bearer = flags.bearer
-    , records = Nothing
-    }
-        ! []
+    let
+        model =
+            { email = Maybe.withDefault "" flags.email
+            , bearer = flags.bearer
+            , records = Nothing
+            , error = Nothing
+            }
+    in
+        update LoadRecords model
 
 
 
@@ -75,8 +111,64 @@ update message model =
         Authenticate ->
             model ! [ authenticate model.email ]
 
-        BearerTokenRetrieved bearer ->
-            { model | bearer = Just bearer } ! []
+        LoadRecords ->
+            case model.bearer of
+                Nothing ->
+                    model ! []
+
+                Just bearer ->
+                    { model | records = Just [], error = Nothing } ! [ fetchRecordList bearer ]
+
+        FetchRecordsResponse (Ok recordList) ->
+            { model
+                | records = Just recordList
+                , error = Nothing
+            }
+                ! []
+
+        FetchRecordsResponse (Err error) ->
+            { model | error = Just <| toString error } ! []
+
+        Logout ->
+            { model
+                | error = Nothing
+                , records = Nothing
+                , bearer = Nothing
+            }
+                ! [ saveData { key = "bearer", value = Encode.null } ]
+
+
+
+-- Kinto related
+
+
+fetchRecordList : String -> Cmd Msg
+fetchRecordList bearer =
+    let
+        client =
+            Kinto.client kintoServer (Kinto.Custom "Portier" bearer)
+    in
+        client
+            |> Kinto.getList recordResource
+            |> Kinto.sortBy [ "last_modified" ]
+            |> Kinto.send FetchRecordsResponse
+
+
+recordResource : Kinto.Resource Record
+recordResource =
+    Kinto.recordResource bucket collection decodeRecord
+
+
+decodeRecord : Decode.Decoder Record
+decodeRecord =
+    (Decode.map6 Record
+        (Decode.field "id" Decode.string)
+        (Decode.field "last_modified" Decode.int)
+        (Decode.maybe (Decode.field "subject" Decode.string))
+        (Decode.field "stateMachineArn" Decode.string)
+        (Decode.field "activityArn" Decode.string)
+        (Decode.maybe (Decode.field "status" Decode.string))
+    )
 
 
 
@@ -121,7 +213,29 @@ formView model =
 
 displayRecords : Model -> List Record -> Html.Html Msg
 displayRecords model records =
-    Html.text "Authenticated"
+    case model.error of
+        Nothing ->
+            Html.table [ Html.Attributes.class "table" ]
+                [ Html.thead [ Html.Attributes.class "thead-inverse" ]
+                    [ Html.tr []
+                        [ Html.th [] [ Html.text "Subject" ]
+                        , Html.th [] [ Html.text "Status" ]
+                          -- Maybe.withDefault "UNANSWERED" Html.status]
+                        ]
+                    ]
+                , Html.tbody [] <| List.map (displayRecord model) records
+                ]
+
+        Just error ->
+            Html.pre [] [ Html.text error ]
+
+
+displayRecord : Model -> Record -> Html.Html Msg
+displayRecord model record =
+    Html.tr []
+        [ Html.td [] [ Html.text (Maybe.withDefault record.id record.subject) ]
+        , Html.td [] [ Html.text (String.toUpper (Maybe.withDefault "UNANSWERED" record.status)) ]
+        ]
 
 
 view : Model -> Html.Html Msg
@@ -131,12 +245,20 @@ view model =
             formView model
 
         Just bearer ->
-            case model.records of
-                Nothing ->
-                    Html.text "Authenticated, loading records..."
+            Html.div []
+                [ Html.h1 [] [ Html.text "Manual StepFunction Dashboard" ]
+                , case model.records of
+                    Nothing ->
+                        Html.text "Authenticated, loading records..."
 
-                Just records ->
-                    displayRecords model records
+                    Just records ->
+                        displayRecords model records
+                , Html.a
+                    [ Html.Attributes.href "#"
+                    , Html.Events.onClick Logout
+                    ]
+                    [ Html.text "Logout" ]
+                ]
 
 
 
