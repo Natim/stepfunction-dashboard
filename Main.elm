@@ -314,10 +314,17 @@ displayRecords model records =
             Html.pre [] [ Html.text error ]
 
 
+recordTitle : Record -> String
+recordTitle record =
+    "State Machine:\n  " ++ record.stateMachineArn ++ "\n\nActivity:\n  " ++ record.activityArn
+
+
 displayRecord : Model -> Record -> Html.Html Msg
 displayRecord model record =
     Html.tr []
-        [ Html.td [] [ Html.text (Maybe.withDefault record.id record.subject) ]
+        [ Html.td
+            [ Html.Attributes.title (recordTitle record) ]
+            [ Html.text (Maybe.withDefault record.id record.subject) ]
         , Html.td [] [ Html.text (String.toUpper (Maybe.withDefault "UNANSWERED" record.status)) ]
         , Html.td []
             [ Html.div [ Html.Attributes.class "btn-group" ]
