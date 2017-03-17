@@ -9,23 +9,6 @@ import Json.Encode as Encode
 import Kinto
 
 
--- Settings
--- If you change the kintoServer there you want to change it in ports.js too.
-
-
-kintoServer =
-    "https://kinto.dev.mozaws.net/v1/"
-
-
-bucket =
-    "stepfunction"
-
-
-collection =
-    "manual_steps"
-
-
-
 -- Model
 
 
@@ -36,6 +19,9 @@ type alias Url =
 type alias Flags =
     { email : Maybe String
     , bearer : Maybe Bearer
+    , kintoServer : String
+    , kintoBucket : String
+    , kintoCollection : String
     }
 
 
@@ -44,6 +30,9 @@ type alias Model =
     , bearer : Maybe Bearer
     , records : Maybe (List Record)
     , error : Maybe String
+    , kintoServer : String
+    , kintoBucket : String
+    , kintoCollection : String
     }
 
 
@@ -92,6 +81,9 @@ init flags =
             , bearer = flags.bearer
             , records = Nothing
             , error = Nothing
+            , kintoServer = flags.kintoServer
+            , kintoBucket = flags.kintoBucket
+            , kintoCollection = flags.kintoCollection
             }
     in
         update LoadRecords model
@@ -114,7 +106,8 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
     case message of
         NewEmail email ->
-            { model | email = email } ! [ saveData { key = "email", value = Encode.string email } ]
+            { model | email = email }
+                ! [ saveData { key = "email", value = Encode.string email } ]
 
         Authenticate ->
             model ! [ authenticate model.email ]
@@ -125,7 +118,11 @@ update message model =
                     model ! []
 
                 Just bearer ->
-                    { model | records = Just [], error = Nothing } ! [ fetchRecordList bearer ]
+                    { model
+                        | records = Just []
+                        , error = Nothing
+                    }
+                        ! [ fetchRecordList model bearer ]
 
         FetchRecordsResponse (Ok recordList) ->
             { model
@@ -151,7 +148,7 @@ update message model =
                     model ! []
 
                 Just bearer ->
-                    model ! [ answerStep bearer recordId "succeed" ]
+                    model ! [ answerStep model bearer recordId "succeed" ]
 
         RejectStep recordId ->
             case model.bearer of
@@ -159,7 +156,7 @@ update message model =
                     model ! []
 
                 Just bearer ->
-                    model ! [ answerStep bearer recordId "fail" ]
+                    model ! [ answerStep model bearer recordId "fail" ]
 
         AnswerResponse (Err error) ->
             { model | error = Just <| toString error } ! []
@@ -170,7 +167,7 @@ update message model =
                     model ! []
 
                 Just bearer ->
-                    model ! [ fetchRecordList bearer ]
+                    model ! [ fetchRecordList model bearer ]
 
 
 
@@ -189,7 +186,16 @@ answerUrl baseUrl bucketName collectionName recordId =
         joinUrl =
             String.join "/"
     in
-        joinUrl [ url, "buckets", bucketName, "collections", collectionName, "records", recordId, "stepfunction" ]
+        joinUrl
+            [ url
+            , "buckets"
+            , bucketName
+            , "collections"
+            , collectionName
+            , "records"
+            , recordId
+            , "stepfunction"
+            ]
 
 
 answerResource : String -> String -> String -> Encode.Value -> Kinto.Client -> HttpBuilder.RequestBuilder ()
@@ -205,32 +211,32 @@ encodeAnswer answer =
     Encode.object [ ( "answer", Encode.string answer ) ]
 
 
-answerStep : Bearer -> RecordId -> String -> Cmd Msg
-answerStep bearer recordId answer =
+answerStep : Model -> Bearer -> RecordId -> String -> Cmd Msg
+answerStep model bearer recordId answer =
     let
         client =
-            Kinto.client kintoServer (Kinto.Custom "Portier" bearer)
+            Kinto.client model.kintoServer (Kinto.Custom "Portier" bearer)
     in
         client
-            |> answerResource bucket collection recordId (encodeAnswer answer)
+            |> answerResource model.kintoBucket model.kintoCollection recordId (encodeAnswer answer)
             |> Kinto.send AnswerResponse
 
 
-fetchRecordList : Bearer -> Cmd Msg
-fetchRecordList bearer =
+fetchRecordList : Model -> Bearer -> Cmd Msg
+fetchRecordList model bearer =
     let
         client =
-            Kinto.client kintoServer (Kinto.Custom "Portier" bearer)
+            Kinto.client model.kintoServer (Kinto.Custom "Portier" bearer)
     in
         client
-            |> Kinto.getList recordResource
+            |> Kinto.getList (recordResource model.kintoBucket model.kintoCollection)
             |> Kinto.sortBy [ "last_modified" ]
             |> Kinto.send FetchRecordsResponse
 
 
-recordResource : Kinto.Resource Record
-recordResource =
-    Kinto.recordResource bucket collection decodeRecord
+recordResource : String -> String -> Kinto.Resource Record
+recordResource bucketName collectionName =
+    Kinto.recordResource bucketName collectionName decodeRecord
 
 
 decodeRecord : Decode.Decoder Record
@@ -263,7 +269,11 @@ formView model =
                 [ Html.div [ Html.Attributes.class "main-login-form" ]
                     [ Html.div [ Html.Attributes.class "login-group" ]
                         [ Html.div [ Html.Attributes.class "form-group" ]
-                            [ Html.label [ Html.Attributes.for "fp_email", Html.Attributes.class "sr-only" ] [ Html.text "Email address" ]
+                            [ Html.label
+                                [ Html.Attributes.for "fp_email"
+                                , Html.Attributes.class "sr-only"
+                                ]
+                                [ Html.text "Email address" ]
                             , Html.input
                                 [ Html.Attributes.class "form-control"
                                 , Html.Attributes.id "fp_email"

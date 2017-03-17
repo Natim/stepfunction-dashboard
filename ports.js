@@ -1,4 +1,7 @@
-const KINTO_SERVER = "https://kinto.dev.mozaws.net/v1";  // No trailing
+const KINTO_SERVER = "https://kinto.dev.mozaws.net/v1";  // No trailing slash
+const KINTO_BUCKET = "stepfunction";
+const KINTO_COLLECTION = "manual_steps";
+
 
 // Handle redirection with the bearer token in the hash
 if (window.location.hash.indexOf("#auth=") === 0) {
@@ -11,7 +14,13 @@ if (window.location.hash.indexOf("#auth=") === 0) {
 const bearer = localStorage.getItem("bearer");
 const email = localStorage.getItem("email");
 
-app = Elm.Main.fullscreen({email: email, bearer: bearer});
+app = Elm.Main.fullscreen({
+  email: email,
+  bearer: bearer,
+  kintoServer: KINTO_SERVER,
+  kintoBucket: KINTO_BUCKET,
+  kintoCollection: KINTO_COLLECTION
+});
 
 // Handle calling to Kinto-Portier login resource.
 app.ports.authenticate.subscribe(function(emailValue) {
@@ -21,6 +30,7 @@ app.ports.authenticate.subscribe(function(emailValue) {
   const redirect = document.createElement("input");
 
   form.method = "POST";
+  // XXX: Fixme handle trailing slash in KINTO_SERVER
   form.action = `${KINTO_SERVER}/portier/login`;
   form.style.display = "none";
 
