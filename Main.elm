@@ -7,6 +7,7 @@ import Html.Events
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Kinto
+import Time exposing (Time, minute)
 
 
 -- Model
@@ -67,6 +68,7 @@ type Msg
     | AcceptStep String
     | RejectStep String
     | AnswerResponse (Result Kinto.Error ())
+    | Tick Time
 
 
 
@@ -95,7 +97,7 @@ init flags =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
+    Sub.batch [ Time.every minute Tick ]
 
 
 
@@ -154,6 +156,8 @@ update message model =
         AnswerResponse (Ok _) ->
             model ! [ fetchRecordList model ]
 
+        Tick _ ->
+            model ! [ fetchRecordList model ]
 
 
 
