@@ -117,12 +117,12 @@ update message model =
                 Nothing ->
                     model ! []
 
-                Just bearer ->
+                Just _ ->
                     { model
                         | records = Just []
                         , error = Nothing
                     }
-                        ! [ fetchRecordList model bearer ]
+                        ! [ fetchRecordList model ]
 
         FetchRecordsResponse (Ok recordList) ->
             { model
@@ -143,31 +143,17 @@ update message model =
                 ! [ saveData { key = "bearer", value = Encode.null } ]
 
         AcceptStep recordId ->
-            case model.bearer of
-                Nothing ->
-                    model ! []
-
-                Just bearer ->
-                    model ! [ answerStep model bearer recordId "succeed" ]
+            model ! [ answerStep model recordId "succeed" ]
 
         RejectStep recordId ->
-            case model.bearer of
-                Nothing ->
-                    model ! []
-
-                Just bearer ->
-                    model ! [ answerStep model bearer recordId "fail" ]
+            model ! [ answerStep model recordId "fail" ]
 
         AnswerResponse (Err error) ->
             { model | error = Just <| toString error } ! []
 
         AnswerResponse (Ok _) ->
-            case model.bearer of
-                Nothing ->
-                    model ! []
+            model ! [ fetchRecordList model ]
 
-                Just bearer ->
-                    model ! [ fetchRecordList model bearer ]
 
 
 
@@ -211,27 +197,37 @@ encodeAnswer answer =
     Encode.object [ ( "answer", Encode.string answer ) ]
 
 
-answerStep : Model -> Bearer -> RecordId -> String -> Cmd Msg
-answerStep model bearer recordId answer =
-    let
-        client =
-            Kinto.client model.kintoServer (Kinto.Custom "Portier" bearer)
-    in
-        client
-            |> answerResource model.kintoBucket model.kintoCollection recordId (encodeAnswer answer)
-            |> Kinto.send AnswerResponse
+answerStep : Model -> RecordId -> String -> Cmd Msg
+answerStep model recordId answer =
+    case model.bearer of
+        Nothing ->
+            Cmd.none
+
+        Just bearer ->
+            let
+                client =
+                    Kinto.client model.kintoServer (Kinto.Custom "Portier" bearer)
+            in
+                client
+                    |> answerResource model.kintoBucket model.kintoCollection recordId (encodeAnswer answer)
+                    |> Kinto.send AnswerResponse
 
 
-fetchRecordList : Model -> Bearer -> Cmd Msg
-fetchRecordList model bearer =
-    let
-        client =
-            Kinto.client model.kintoServer (Kinto.Custom "Portier" bearer)
-    in
-        client
-            |> Kinto.getList (recordResource model.kintoBucket model.kintoCollection)
-            |> Kinto.sortBy [ "last_modified" ]
-            |> Kinto.send FetchRecordsResponse
+fetchRecordList : Model -> Cmd Msg
+fetchRecordList model =
+    case model.bearer of
+        Nothing ->
+            Cmd.none
+
+        Just bearer ->
+            let
+                client =
+                    Kinto.client model.kintoServer (Kinto.Custom "Portier" bearer)
+            in
+                client
+                    |> Kinto.getList (recordResource model.kintoBucket model.kintoCollection)
+                    |> Kinto.sortBy [ "last_modified" ]
+                    |> Kinto.send FetchRecordsResponse
 
 
 recordResource : String -> String -> Kinto.Resource Record
