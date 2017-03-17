@@ -1,0 +1,26 @@
+{
+  "name": "stepfunction-dashboard",
+  "version": "0.1.0",
+  "description": "Elm dashboard that you can sign-in and list the manual step function that you need to signoff.",
+  "scripts": {
+    "build": "elm-make Main.elm --output=build/dashboard.js && index.html build/",
+    "debug": "elm-live Main.elm --output=dashboard.js --open -- --debug",
+    "live": "elm-live Main.elm --output=dashboard.js --open",
+    "publish-to-gh-pages": "npm run build && gh-pages --dist ./build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/addons-shipping/stefunction-dashboard.git"
+  },
+  "author": "Storage team",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/addons-shipping/stefunction-dashboard/issues"
+  },
+  "homepage": "https://github.com/addons-shipping/stefunction-dashboard#readme",
+  "devDependencies": {
+    "elm": "^0.18.0",
+    "elm-live": "^2.7.4",
+    "gh-pages": "^0.12.0"
+  }
+}
