@@ -10103,6 +10103,147 @@ var _elm_lang$html$Html_Events$Options = F2(
 		return {stopPropagation: a, preventDefault: b};
 	});
 
+var _user$project$Main$encodeAnswer = function (answer) {
+	return _elm_lang$core$Json_Encode$object(
+		{
+			ctor: '::',
+			_0: {
+				ctor: '_Tuple2',
+				_0: 'answer',
+				_1: _elm_lang$core$Json_Encode$string(answer)
+			},
+			_1: {ctor: '[]'}
+		});
+};
+var _user$project$Main$answerUrl = F4(
+	function (baseUrl, bucketName, collectionName, recordId) {
+		var joinUrl = _elm_lang$core$String$join('/');
+		var url = A2(_elm_lang$core$String$endsWith, '/', baseUrl) ? A2(_elm_lang$core$String$dropRight, 1, baseUrl) : baseUrl;
+		return joinUrl(
+			{
+				ctor: '::',
+				_0: url,
+				_1: {
+					ctor: '::',
+					_0: 'buckets',
+					_1: {
+						ctor: '::',
+						_0: bucketName,
+						_1: {
+							ctor: '::',
+							_0: 'collections',
+							_1: {
+								ctor: '::',
+								_0: collectionName,
+								_1: {
+									ctor: '::',
+									_0: 'records',
+									_1: {
+										ctor: '::',
+										_0: recordId,
+										_1: {
+											ctor: '::',
+											_0: 'stepfunction',
+											_1: {ctor: '[]'}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			});
+	});
+var _user$project$Main$answerResource = F5(
+	function (bucketName, collectionName, recordId, body, client) {
+		return A2(
+			_lukewestby$elm_http_builder$HttpBuilder$withJsonBody,
+			body,
+			A2(
+				_lukewestby$elm_http_builder$HttpBuilder$withHeaders,
+				client.headers,
+				_lukewestby$elm_http_builder$HttpBuilder$post(
+					A4(_user$project$Main$answerUrl, client.baseUrl, bucketName, collectionName, recordId))));
+	});
+var _user$project$Main$authenticate = _elm_lang$core$Native_Platform.outgoingPort(
+	'authenticate',
+	function (v) {
+		return v;
+	});
+var _user$project$Main$saveData = _elm_lang$core$Native_Platform.outgoingPort(
+	'saveData',
+	function (v) {
+		return {key: v.key, value: v.value};
+	});
+var _user$project$Main$Flags = F5(
+	function (a, b, c, d, e) {
+		return {email: a, bearer: b, kintoServer: c, kintoBucket: d, kintoCollection: e};
+	});
+var _user$project$Main$Model = F7(
+	function (a, b, c, d, e, f, g) {
+		return {email: a, bearer: b, records: c, error: d, kintoServer: e, kintoBucket: f, kintoCollection: g};
+	});
+var _user$project$Main$Record = F6(
+	function (a, b, c, d, e, f) {
+		return {id: a, last_modified: b, subject: c, stateMachineArn: d, activityArn: e, status: f};
+	});
+var _user$project$Main$decodeRecord = A7(
+	_elm_lang$core$Json_Decode$map6,
+	_user$project$Main$Record,
+	A2(_elm_lang$core$Json_Decode$field, 'id', _elm_lang$core$Json_Decode$string),
+	A2(_elm_lang$core$Json_Decode$field, 'last_modified', _elm_lang$core$Json_Decode$int),
+	_elm_lang$core$Json_Decode$maybe(
+		A2(_elm_lang$core$Json_Decode$field, 'subject', _elm_lang$core$Json_Decode$string)),
+	A2(_elm_lang$core$Json_Decode$field, 'stateMachineArn', _elm_lang$core$Json_Decode$string),
+	A2(_elm_lang$core$Json_Decode$field, 'activityArn', _elm_lang$core$Json_Decode$string),
+	_elm_lang$core$Json_Decode$maybe(
+		A2(_elm_lang$core$Json_Decode$field, 'status', _elm_lang$core$Json_Decode$string)));
+var _user$project$Main$recordResource = F2(
+	function (bucketName, collectionName) {
+		return A3(_Kinto$elm_kinto$Kinto$recordResource, bucketName, collectionName, _user$project$Main$decodeRecord);
+	});
+var _user$project$Main$Tick = function (a) {
+	return {ctor: 'Tick', _0: a};
+};
+var _user$project$Main$subscriptions = function (model) {
+	return _elm_lang$core$Platform_Sub$batch(
+		{
+			ctor: '::',
+			_0: A2(_elm_lang$core$Time$every, _elm_lang$core$Time$minute, _user$project$Main$Tick),
+			_1: {ctor: '[]'}
+		});
+};
+var _user$project$Main$AnswerResponse = function (a) {
+	return {ctor: 'AnswerResponse', _0: a};
+};
+var _user$project$Main$answerStep = F3(
+	function (model, recordId, answer) {
+		var _p0 = model.bearer;
+		if (_p0.ctor === 'Nothing') {
+			return _elm_lang$core$Platform_Cmd$none;
+		} else {
+			var client = A2(
+				_Kinto$elm_kinto$Kinto$client,
+				model.kintoServer,
+				A2(_Kinto$elm_kinto$Kinto$Custom, 'Portier', _p0._0));
+			return A2(
+				_Kinto$elm_kinto$Kinto$send,
+				_user$project$Main$AnswerResponse,
+				A5(
+					_user$project$Main$answerResource,
+					model.kintoBucket,
+					model.kintoCollection,
+					recordId,
+					_user$project$Main$encodeAnswer(answer),
+					client));
+		}
+	});
+var _user$project$Main$RejectStep = function (a) {
+	return {ctor: 'RejectStep', _0: a};
+};
+var _user$project$Main$AcceptStep = function (a) {
+	return {ctor: 'AcceptStep', _0: a};
+};
 var _user$project$Main$displayRecord = F2(
 	function (model, record) {
 		return A2(
@@ -10131,14 +10272,72 @@ var _user$project$Main$displayRecord = F2(
 									A2(_elm_lang$core$Maybe$withDefault, 'UNANSWERED', record.status))),
 							_1: {ctor: '[]'}
 						}),
-					_1: {ctor: '[]'}
+					_1: {
+						ctor: '::',
+						_0: A2(
+							_elm_lang$html$Html$td,
+							{ctor: '[]'},
+							{
+								ctor: '::',
+								_0: A2(
+									_elm_lang$html$Html$div,
+									{
+										ctor: '::',
+										_0: _elm_lang$html$Html_Attributes$class('btn-group'),
+										_1: {ctor: '[]'}
+									},
+									{
+										ctor: '::',
+										_0: A2(
+											_elm_lang$html$Html$button,
+											{
+												ctor: '::',
+												_0: _elm_lang$html$Html_Attributes$class('btn btn-success'),
+												_1: {
+													ctor: '::',
+													_0: _elm_lang$html$Html_Events$onClick(
+														_user$project$Main$AcceptStep(record.id)),
+													_1: {ctor: '[]'}
+												}
+											},
+											{
+												ctor: '::',
+												_0: _elm_lang$html$Html$text('Accept'),
+												_1: {ctor: '[]'}
+											}),
+										_1: {
+											ctor: '::',
+											_0: A2(
+												_elm_lang$html$Html$button,
+												{
+													ctor: '::',
+													_0: _elm_lang$html$Html_Attributes$class('btn btn-danger'),
+													_1: {
+														ctor: '::',
+														_0: _elm_lang$html$Html_Events$onClick(
+															_user$project$Main$RejectStep(record.id)),
+														_1: {ctor: '[]'}
+													}
+												},
+												{
+													ctor: '::',
+													_0: _elm_lang$html$Html$text('Reject'),
+													_1: {ctor: '[]'}
+												}),
+											_1: {ctor: '[]'}
+										}
+									}),
+								_1: {ctor: '[]'}
+							}),
+						_1: {ctor: '[]'}
+					}
 				}
 			});
 	});
 var _user$project$Main$displayRecords = F2(
 	function (model, records) {
-		var _p0 = model.error;
-		if (_p0.ctor === 'Nothing') {
+		var _p1 = model.error;
+		if (_p1.ctor === 'Nothing') {
 			return A2(
 				_elm_lang$html$Html$table,
 				{
@@ -10180,7 +10379,18 @@ var _user$project$Main$displayRecords = F2(
 												_0: _elm_lang$html$Html$text('Status'),
 												_1: {ctor: '[]'}
 											}),
-										_1: {ctor: '[]'}
+										_1: {
+											ctor: '::',
+											_0: A2(
+												_elm_lang$html$Html$th,
+												{ctor: '[]'},
+												{
+													ctor: '::',
+													_0: _elm_lang$html$Html$text('Actions'),
+													_1: {ctor: '[]'}
+												}),
+											_1: {ctor: '[]'}
+										}
 									}
 								}),
 							_1: {ctor: '[]'}
@@ -10203,89 +10413,57 @@ var _user$project$Main$displayRecords = F2(
 				{ctor: '[]'},
 				{
 					ctor: '::',
-					_0: _elm_lang$html$Html$text(_p0._0),
+					_0: _elm_lang$html$Html$text(_p1._0),
 					_1: {ctor: '[]'}
 				});
 		}
 	});
-var _user$project$Main$subscriptions = function (model) {
-	return _elm_lang$core$Platform_Sub$none;
-};
-var _user$project$Main$collection = 'manual_steps';
-var _user$project$Main$bucket = 'stepfunction';
-var _user$project$Main$kintoServer = 'https://kinto.dev.mozaws.net/v1/';
-var _user$project$Main$authenticate = _elm_lang$core$Native_Platform.outgoingPort(
-	'authenticate',
-	function (v) {
-		return v;
-	});
-var _user$project$Main$saveData = _elm_lang$core$Native_Platform.outgoingPort(
-	'saveData',
-	function (v) {
-		return {key: v.key, value: v.value};
-	});
-var _user$project$Main$Flags = F2(
-	function (a, b) {
-		return {email: a, bearer: b};
-	});
-var _user$project$Main$Model = F4(
-	function (a, b, c, d) {
-		return {email: a, bearer: b, records: c, error: d};
-	});
-var _user$project$Main$Record = F6(
-	function (a, b, c, d, e, f) {
-		return {id: a, last_modified: b, subject: c, stateMachineArn: d, activityArn: e, status: f};
-	});
-var _user$project$Main$decodeRecord = A7(
-	_elm_lang$core$Json_Decode$map6,
-	_user$project$Main$Record,
-	A2(_elm_lang$core$Json_Decode$field, 'id', _elm_lang$core$Json_Decode$string),
-	A2(_elm_lang$core$Json_Decode$field, 'last_modified', _elm_lang$core$Json_Decode$int),
-	_elm_lang$core$Json_Decode$maybe(
-		A2(_elm_lang$core$Json_Decode$field, 'subject', _elm_lang$core$Json_Decode$string)),
-	A2(_elm_lang$core$Json_Decode$field, 'stateMachineArn', _elm_lang$core$Json_Decode$string),
-	A2(_elm_lang$core$Json_Decode$field, 'activityArn', _elm_lang$core$Json_Decode$string),
-	_elm_lang$core$Json_Decode$maybe(
-		A2(_elm_lang$core$Json_Decode$field, 'status', _elm_lang$core$Json_Decode$string)));
-var _user$project$Main$recordResource = A3(_Kinto$elm_kinto$Kinto$recordResource, _user$project$Main$bucket, _user$project$Main$collection, _user$project$Main$decodeRecord);
 var _user$project$Main$Logout = {ctor: 'Logout'};
 var _user$project$Main$FetchRecordsResponse = function (a) {
 	return {ctor: 'FetchRecordsResponse', _0: a};
 };
-var _user$project$Main$fetchRecordList = function (bearer) {
-	var client = A2(
-		_Kinto$elm_kinto$Kinto$client,
-		_user$project$Main$kintoServer,
-		A2(_Kinto$elm_kinto$Kinto$Custom, 'Portier', bearer));
-	return A2(
-		_Kinto$elm_kinto$Kinto$send,
-		_user$project$Main$FetchRecordsResponse,
-		A2(
-			_Kinto$elm_kinto$Kinto$sortBy,
-			{
-				ctor: '::',
-				_0: 'last_modified',
-				_1: {ctor: '[]'}
-			},
-			A2(_Kinto$elm_kinto$Kinto$getList, _user$project$Main$recordResource, client)));
+var _user$project$Main$fetchRecordList = function (model) {
+	var _p2 = model.bearer;
+	if (_p2.ctor === 'Nothing') {
+		return _elm_lang$core$Platform_Cmd$none;
+	} else {
+		var client = A2(
+			_Kinto$elm_kinto$Kinto$client,
+			model.kintoServer,
+			A2(_Kinto$elm_kinto$Kinto$Custom, 'Portier', _p2._0));
+		return A2(
+			_Kinto$elm_kinto$Kinto$send,
+			_user$project$Main$FetchRecordsResponse,
+			A2(
+				_Kinto$elm_kinto$Kinto$sortBy,
+				{
+					ctor: '::',
+					_0: 'last_modified',
+					_1: {ctor: '[]'}
+				},
+				A2(
+					_Kinto$elm_kinto$Kinto$getList,
+					A2(_user$project$Main$recordResource, model.kintoBucket, model.kintoCollection),
+					client)));
+	}
 };
 var _user$project$Main$update = F2(
 	function (message, model) {
-		var _p1 = message;
-		switch (_p1.ctor) {
+		var _p3 = message;
+		switch (_p3.ctor) {
 			case 'NewEmail':
-				var _p2 = _p1._0;
+				var _p4 = _p3._0;
 				return A2(
 					_elm_lang$core$Platform_Cmd_ops['!'],
 					_elm_lang$core$Native_Utils.update(
 						model,
-						{email: _p2}),
+						{email: _p4}),
 					{
 						ctor: '::',
 						_0: _user$project$Main$saveData(
 							{
 								key: 'email',
-								value: _elm_lang$core$Json_Encode$string(_p2)
+								value: _elm_lang$core$Json_Encode$string(_p4)
 							}),
 						_1: {ctor: '[]'}
 					});
@@ -10299,8 +10477,8 @@ var _user$project$Main$update = F2(
 						_1: {ctor: '[]'}
 					});
 			case 'LoadRecords':
-				var _p3 = model.bearer;
-				if (_p3.ctor === 'Nothing') {
+				var _p5 = model.bearer;
+				if (_p5.ctor === 'Nothing') {
 					return A2(
 						_elm_lang$core$Platform_Cmd_ops['!'],
 						model,
@@ -10317,18 +10495,18 @@ var _user$project$Main$update = F2(
 							}),
 						{
 							ctor: '::',
-							_0: _user$project$Main$fetchRecordList(_p3._0),
+							_0: _user$project$Main$fetchRecordList(model),
 							_1: {ctor: '[]'}
 						});
 				}
 			case 'FetchRecordsResponse':
-				if (_p1._0.ctor === 'Ok') {
+				if (_p3._0.ctor === 'Ok') {
 					return A2(
 						_elm_lang$core$Platform_Cmd_ops['!'],
 						_elm_lang$core$Native_Utils.update(
 							model,
 							{
-								records: _elm_lang$core$Maybe$Just(_p1._0._0),
+								records: _elm_lang$core$Maybe$Just(_p3._0._0),
 								error: _elm_lang$core$Maybe$Nothing
 							}),
 						{ctor: '[]'});
@@ -10339,11 +10517,11 @@ var _user$project$Main$update = F2(
 							model,
 							{
 								error: _elm_lang$core$Maybe$Just(
-									_elm_lang$core$Basics$toString(_p1._0._0))
+									_elm_lang$core$Basics$toString(_p3._0._0))
 							}),
 						{ctor: '[]'});
 				}
-			default:
+			case 'Logout':
 				return A2(
 					_elm_lang$core$Platform_Cmd_ops['!'],
 					_elm_lang$core$Native_Utils.update(
@@ -10355,6 +10533,54 @@ var _user$project$Main$update = F2(
 							{key: 'bearer', value: _elm_lang$core$Json_Encode$null}),
 						_1: {ctor: '[]'}
 					});
+			case 'AcceptStep':
+				return A2(
+					_elm_lang$core$Platform_Cmd_ops['!'],
+					model,
+					{
+						ctor: '::',
+						_0: A3(_user$project$Main$answerStep, model, _p3._0, 'succeed'),
+						_1: {ctor: '[]'}
+					});
+			case 'RejectStep':
+				return A2(
+					_elm_lang$core$Platform_Cmd_ops['!'],
+					model,
+					{
+						ctor: '::',
+						_0: A3(_user$project$Main$answerStep, model, _p3._0, 'fail'),
+						_1: {ctor: '[]'}
+					});
+			case 'AnswerResponse':
+				if (_p3._0.ctor === 'Err') {
+					return A2(
+						_elm_lang$core$Platform_Cmd_ops['!'],
+						_elm_lang$core$Native_Utils.update(
+							model,
+							{
+								error: _elm_lang$core$Maybe$Just(
+									_elm_lang$core$Basics$toString(_p3._0._0))
+							}),
+						{ctor: '[]'});
+				} else {
+					return A2(
+						_elm_lang$core$Platform_Cmd_ops['!'],
+						model,
+						{
+							ctor: '::',
+							_0: _user$project$Main$fetchRecordList(model),
+							_1: {ctor: '[]'}
+						});
+				}
+			default:
+				return A2(
+					_elm_lang$core$Platform_Cmd_ops['!'],
+					model,
+					{
+						ctor: '::',
+						_0: _user$project$Main$fetchRecordList(model),
+						_1: {ctor: '[]'}
+					});
 		}
 	});
 var _user$project$Main$LoadRecords = {ctor: 'LoadRecords'};
@@ -10363,7 +10589,10 @@ var _user$project$Main$init = function (flags) {
 		email: A2(_elm_lang$core$Maybe$withDefault, '', flags.email),
 		bearer: flags.bearer,
 		records: _elm_lang$core$Maybe$Nothing,
-		error: _elm_lang$core$Maybe$Nothing
+		error: _elm_lang$core$Maybe$Nothing,
+		kintoServer: flags.kintoServer,
+		kintoBucket: flags.kintoBucket,
+		kintoCollection: flags.kintoCollection
 	};
 	return A2(_user$project$Main$update, _user$project$Main$LoadRecords, model);
 };
@@ -10532,8 +10761,8 @@ var _user$project$Main$formView = function (model) {
 		});
 };
 var _user$project$Main$view = function (model) {
-	var _p4 = model.bearer;
-	if (_p4.ctor === 'Nothing') {
+	var _p6 = model.bearer;
+	if (_p6.ctor === 'Nothing') {
 		return _user$project$Main$formView(model);
 	} else {
 		return A2(
@@ -10552,11 +10781,11 @@ var _user$project$Main$view = function (model) {
 				_1: {
 					ctor: '::',
 					_0: function () {
-						var _p5 = model.records;
-						if (_p5.ctor === 'Nothing') {
+						var _p7 = model.records;
+						if (_p7.ctor === 'Nothing') {
 							return _elm_lang$html$Html$text('Authenticated, loading records...');
 						} else {
-							return A2(_user$project$Main$displayRecords, model, _p5._0);
+							return A2(_user$project$Main$displayRecords, model, _p7._0);
 						}
 					}(),
 					_1: {
@@ -10591,8 +10820,23 @@ var _user$project$Main$main = _elm_lang$html$Html$programWithFlags(
 			return A2(
 				_elm_lang$core$Json_Decode$andThen,
 				function (email) {
-					return _elm_lang$core$Json_Decode$succeed(
-						{bearer: bearer, email: email});
+					return A2(
+						_elm_lang$core$Json_Decode$andThen,
+						function (kintoBucket) {
+							return A2(
+								_elm_lang$core$Json_Decode$andThen,
+								function (kintoCollection) {
+									return A2(
+										_elm_lang$core$Json_Decode$andThen,
+										function (kintoServer) {
+											return _elm_lang$core$Json_Decode$succeed(
+												{bearer: bearer, email: email, kintoBucket: kintoBucket, kintoCollection: kintoCollection, kintoServer: kintoServer});
+										},
+										A2(_elm_lang$core$Json_Decode$field, 'kintoServer', _elm_lang$core$Json_Decode$string));
+								},
+								A2(_elm_lang$core$Json_Decode$field, 'kintoCollection', _elm_lang$core$Json_Decode$string));
+						},
+						A2(_elm_lang$core$Json_Decode$field, 'kintoBucket', _elm_lang$core$Json_Decode$string));
 				},
 				A2(
 					_elm_lang$core$Json_Decode$field,
