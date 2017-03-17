@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Elm dashboard that you can sign-in and list the manual step function that you need to signoff.",
   "scripts": {
-    "build": "elm-make Main.elm --output=build/dashboard.js && index.html build/",
+    "build": "elm-make Main.elm --output=build/dashboard.js && cp *.css index.html build/",
     "debug": "elm-live Main.elm --output=dashboard.js --open -- --debug",
     "live": "elm-live Main.elm --output=dashboard.js --open",
     "publish-to-gh-pages": "npm run build && gh-pages --dist ./build"

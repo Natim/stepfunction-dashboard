@@ -1,13 +1,26 @@
-module Main exposing (..)
+port module Main exposing (..)
 
 import Html
+import Html.Attributes
+import Html.Events
 
 
 -- Model
 
 
+type alias Record =
+    { subject : String
+    , activityArn : String
+    , status : String
+    , stateMachineArn : String
+    }
+
+
 type alias Model =
-    { email : String }
+    { email : String
+    , bearer : Maybe String
+    , records : Maybe (List Record)
+    }
 
 
 
@@ -16,6 +29,8 @@ type alias Model =
 
 type Msg
     = NewEmail String
+    | Authenticate
+    | BearerTokenRetrieved String
 
 
 
@@ -24,7 +39,11 @@ type Msg
 
 init : ( Model, Cmd Msg )
 init =
-    { email = "" } ! []
+    { email = ""
+    , bearer = Nothing
+    , records = Nothing
+    }
+        ! []
 
 
 
@@ -33,7 +52,9 @@ init =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
+    Sub.batch
+        [ authenticated BearerTokenRetrieved
+        ]
 
 
 
@@ -46,14 +67,69 @@ update message model =
         NewEmail email ->
             { model | email = email } ! []
 
+        Authenticate ->
+            model ! []
+
+        BearerTokenRetrieved bearer ->
+            { model | bearer = Just bearer } ! []
+
 
 
 -- View
 
 
+formView : Model -> Html.Html Msg
+formView model =
+    Html.div
+        [ Html.Attributes.class "text-center" ]
+        [ Html.div [ Html.Attributes.class "logo" ] [ Html.text "sign-in" ]
+        , Html.div [ Html.Attributes.class "login-form" ]
+            [ Html.form
+                [ Html.Attributes.id "authenticate-form"
+                , Html.Attributes.class "text-left"
+                , Html.Events.onSubmit Authenticate
+                ]
+                [ Html.div [ Html.Attributes.class "main-login-form" ]
+                    [ Html.div [ Html.Attributes.class "login-group" ]
+                        [ Html.div [ Html.Attributes.class "form-group" ]
+                            [ Html.label [ Html.Attributes.for "fp_email", Html.Attributes.class "sr-only" ] [ Html.text "Email address" ]
+                            , Html.input
+                                [ Html.Attributes.class "form-control"
+                                , Html.Attributes.id "fp_email"
+                                , Html.Attributes.placeholder "john.doe@tld.com"
+                                , Html.Events.onInput NewEmail
+                                ]
+                                []
+                            ]
+                        ]
+                    , Html.button
+                        [ Html.Attributes.class "login-button"
+                        ]
+                        [ Html.i [ Html.Attributes.class "fa fa-chevron-right" ] [] ]
+                    ]
+                ]
+            ]
+        ]
+
+
+displayRecords : Model -> List Record -> Html.Html Msg
+displayRecords model records =
+    Html.text "Authenticated"
+
+
 view : Model -> Html.Html Msg
 view model =
-    Html.div [] [ Html.text "Manual StepFunction Dashboard" ]
+    case model.bearer of
+        Nothing ->
+            formView model
+
+        Just bearer ->
+            case model.records of
+                Nothing ->
+                    Html.text "Authenticated, loading records..."
+
+                Just records ->
+                    displayRecords model records
 
 
 
@@ -67,3 +143,13 @@ main =
         , update = update
         , view = view
         }
+
+
+
+-- Oauth Flow
+
+
+port authenticate : String -> Cmd msg
+
+
+port authenticated : (String -> msg) -> Sub msg
