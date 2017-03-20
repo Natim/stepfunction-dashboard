@@ -145,10 +145,10 @@ update message model =
                 ! [ saveData { key = "bearer", value = Encode.null } ]
 
         AcceptStep recordId ->
-            model ! [ answerStep model recordId "succeed" ]
+            model ! [ answerStep model recordId "SUCCEED" ]
 
         RejectStep recordId ->
-            model ! [ answerStep model recordId "fail" ]
+            model ! [ answerStep model recordId "FAIL" ]
 
         AnswerResponse (Err error) ->
             { model | error = Just <| toString error } ! []
