@@ -1,6 +1,6 @@
 {
   "name": "stepfunction-dashboard",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Elm dashboard that you can sign-in and list the manual step function that you need to signoff.",
   "scripts": {
     "build": "elm-make Main.elm --output=build/dashboard.js && cp ports.js *.css index.html build/",
