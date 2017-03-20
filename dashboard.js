@@ -10126,42 +10126,13 @@ var _user$project$Main$encodeAnswer = function (answer) {
 };
 var _user$project$Main$answerUrl = F4(
 	function (baseUrl, bucketName, collectionName, recordId) {
-		var joinUrl = _elm_lang$core$String$join('/');
-		var url = A2(_elm_lang$core$String$endsWith, '/', baseUrl) ? A2(_elm_lang$core$String$dropRight, 1, baseUrl) : baseUrl;
-		return joinUrl(
-			{
-				ctor: '::',
-				_0: url,
-				_1: {
-					ctor: '::',
-					_0: 'buckets',
-					_1: {
-						ctor: '::',
-						_0: bucketName,
-						_1: {
-							ctor: '::',
-							_0: 'collections',
-							_1: {
-								ctor: '::',
-								_0: collectionName,
-								_1: {
-									ctor: '::',
-									_0: 'records',
-									_1: {
-										ctor: '::',
-										_0: recordId,
-										_1: {
-											ctor: '::',
-											_0: 'stepfunction',
-											_1: {ctor: '[]'}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-			});
+		return A2(
+			_elm_lang$core$Basics_ops['++'],
+			A2(
+				_Kinto$elm_kinto$Kinto$endpointUrl,
+				baseUrl,
+				A3(_Kinto$elm_kinto$Kinto$RecordEndpoint, bucketName, collectionName, recordId)),
+			'/stepfunction');
 	});
 var _user$project$Main$answerResource = F5(
 	function (bucketName, collectionName, recordId, body, client) {
@@ -10174,23 +10145,21 @@ var _user$project$Main$answerResource = F5(
 				_lukewestby$elm_http_builder$HttpBuilder$post(
 					A4(_user$project$Main$answerUrl, client.baseUrl, bucketName, collectionName, recordId))));
 	});
-var _user$project$Main$authenticate = _elm_lang$core$Native_Platform.outgoingPort(
-	'authenticate',
-	function (v) {
-		return v;
-	});
+var _user$project$Main$kintoCollection = 'manual_steps';
+var _user$project$Main$kintoBucket = 'stepfunction';
+var _user$project$Main$kintoServer = 'https://kinto.dev.mozaws.net/v1';
 var _user$project$Main$saveData = _elm_lang$core$Native_Platform.outgoingPort(
 	'saveData',
 	function (v) {
 		return {key: v.key, value: v.value};
 	});
-var _user$project$Main$Flags = F5(
-	function (a, b, c, d, e) {
-		return {email: a, bearer: b, kintoServer: c, kintoBucket: d, kintoCollection: e};
+var _user$project$Main$Flags = F3(
+	function (a, b, c) {
+		return {email: a, bearer: b, redirectUrl: c};
 	});
-var _user$project$Main$Model = F7(
-	function (a, b, c, d, e, f, g) {
-		return {email: a, bearer: b, records: c, error: d, kintoServer: e, kintoBucket: f, kintoCollection: g};
+var _user$project$Main$Model = F8(
+	function (a, b, c, d, e, f, g, h) {
+		return {email: a, bearer: b, records: c, error: d, redirectUrl: e, kintoServer: f, kintoBucket: g, kintoCollection: h};
 	});
 var _user$project$Main$Record = F6(
 	function (a, b, c, d, e, f) {
@@ -10207,10 +10176,6 @@ var _user$project$Main$decodeRecord = A7(
 	A2(_elm_lang$core$Json_Decode$field, 'activityArn', _elm_lang$core$Json_Decode$string),
 	_elm_lang$core$Json_Decode$maybe(
 		A2(_elm_lang$core$Json_Decode$field, 'status', _elm_lang$core$Json_Decode$string)));
-var _user$project$Main$recordResource = F2(
-	function (bucketName, collectionName) {
-		return A3(_Kinto$elm_kinto$Kinto$recordResource, bucketName, collectionName, _user$project$Main$decodeRecord);
-	});
 var _user$project$Main$Tick = function (a) {
 	return {ctor: 'Tick', _0: a};
 };
@@ -10282,8 +10247,7 @@ var _user$project$Main$displayRecord = F2(
 						{
 							ctor: '::',
 							_0: _elm_lang$html$Html$text(
-								_elm_lang$core$String$toUpper(
-									A2(_elm_lang$core$Maybe$withDefault, 'UNANSWERED', record.status))),
+								A2(_elm_lang$core$Maybe$withDefault, 'UNANSWERED', record.status)),
 							_1: {ctor: '[]'}
 						}),
 					_1: {
@@ -10460,6 +10424,7 @@ var _user$project$Main$fetchRecordList = function (model) {
 	if (_p4.ctor === 'Nothing') {
 		return _elm_lang$core$Platform_Cmd$none;
 	} else {
+		var recordResource = A3(_Kinto$elm_kinto$Kinto$recordResource, model.kintoBucket, model.kintoCollection, _user$project$Main$decodeRecord);
 		var client = A2(
 			_Kinto$elm_kinto$Kinto$client,
 			model.kintoServer,
@@ -10474,10 +10439,7 @@ var _user$project$Main$fetchRecordList = function (model) {
 					_0: 'last_modified',
 					_1: {ctor: '[]'}
 				},
-				A2(
-					_Kinto$elm_kinto$Kinto$getList,
-					A2(_user$project$Main$recordResource, model.kintoBucket, model.kintoCollection),
-					client)));
+				A2(_Kinto$elm_kinto$Kinto$getList, recordResource, client)));
 	}
 };
 var _user$project$Main$update = F2(
@@ -10498,15 +10460,6 @@ var _user$project$Main$update = F2(
 								key: 'email',
 								value: _elm_lang$core$Json_Encode$string(_p6)
 							}),
-						_1: {ctor: '[]'}
-					});
-			case 'Authenticate':
-				return A2(
-					_elm_lang$core$Platform_Cmd_ops['!'],
-					model,
-					{
-						ctor: '::',
-						_0: _user$project$Main$authenticate(model.email),
 						_1: {ctor: '[]'}
 					});
 			case 'LoadRecords':
@@ -10556,15 +10509,14 @@ var _user$project$Main$update = F2(
 								}),
 							{ctor: '[]'});
 					} else {
-						var _p9 = _p5._0._0;
-						var _p8 = A2(_elm_lang$core$Debug$log, 'Yo', _p9);
 						return A2(
 							_elm_lang$core$Platform_Cmd_ops['!'],
 							_elm_lang$core$Native_Utils.update(
 								model,
 								{
 									error: _elm_lang$core$Maybe$Just(
-										_elm_lang$core$Basics$toString(_p9))
+										_elm_lang$core$Basics$toString(_p5._0._0)),
+									records: _elm_lang$core$Maybe$Nothing
 								}),
 							{ctor: '[]'});
 					}
@@ -10638,13 +10590,13 @@ var _user$project$Main$init = function (flags) {
 		bearer: flags.bearer,
 		records: _elm_lang$core$Maybe$Nothing,
 		error: _elm_lang$core$Maybe$Nothing,
-		kintoServer: flags.kintoServer,
-		kintoBucket: flags.kintoBucket,
-		kintoCollection: flags.kintoCollection
+		redirectUrl: flags.redirectUrl,
+		kintoServer: _user$project$Main$kintoServer,
+		kintoBucket: _user$project$Main$kintoBucket,
+		kintoCollection: _user$project$Main$kintoCollection
 	};
 	return A2(_user$project$Main$update, _user$project$Main$LoadRecords, model);
 };
-var _user$project$Main$Authenticate = {ctor: 'Authenticate'};
 var _user$project$Main$NewEmail = function (a) {
 	return {ctor: 'NewEmail', _0: a};
 };
@@ -10691,8 +10643,13 @@ var _user$project$Main$formView = function (model) {
 									_0: _elm_lang$html$Html_Attributes$class('text-left'),
 									_1: {
 										ctor: '::',
-										_0: _elm_lang$html$Html_Events$onSubmit(_user$project$Main$Authenticate),
-										_1: {ctor: '[]'}
+										_0: _elm_lang$html$Html_Attributes$method('POST'),
+										_1: {
+											ctor: '::',
+											_0: _elm_lang$html$Html_Attributes$action(
+												A2(_elm_lang$core$Basics_ops['++'], model.kintoServer, '/portier/login')),
+											_1: {ctor: '[]'}
+										}
 									}
 								}
 							},
@@ -10759,15 +10716,42 @@ var _user$project$Main$formView = function (model) {
 																				_0: _elm_lang$html$Html_Attributes$value(model.email),
 																				_1: {
 																					ctor: '::',
-																					_0: _elm_lang$html$Html_Events$onInput(_user$project$Main$NewEmail),
-																					_1: {ctor: '[]'}
+																					_0: _elm_lang$html$Html_Attributes$type_('email'),
+																					_1: {
+																						ctor: '::',
+																						_0: _elm_lang$html$Html_Attributes$name('email'),
+																						_1: {
+																							ctor: '::',
+																							_0: _elm_lang$html$Html_Events$onInput(_user$project$Main$NewEmail),
+																							_1: {ctor: '[]'}
+																						}
+																					}
 																				}
 																			}
 																		}
 																	}
 																},
 																{ctor: '[]'}),
-															_1: {ctor: '[]'}
+															_1: {
+																ctor: '::',
+																_0: A2(
+																	_elm_lang$html$Html$input,
+																	{
+																		ctor: '::',
+																		_0: _elm_lang$html$Html_Attributes$name('redirect'),
+																		_1: {
+																			ctor: '::',
+																			_0: _elm_lang$html$Html_Attributes$value(model.redirectUrl),
+																			_1: {
+																				ctor: '::',
+																				_0: _elm_lang$html$Html_Attributes$type_('hidden'),
+																				_1: {ctor: '[]'}
+																			}
+																		}
+																	},
+																	{ctor: '[]'}),
+																_1: {ctor: '[]'}
+															}
 														}
 													}),
 												_1: {ctor: '[]'}
@@ -10809,8 +10793,8 @@ var _user$project$Main$formView = function (model) {
 		});
 };
 var _user$project$Main$view = function (model) {
-	var _p10 = model.bearer;
-	if (_p10.ctor === 'Nothing') {
+	var _p8 = model.bearer;
+	if (_p8.ctor === 'Nothing') {
 		return _user$project$Main$formView(model);
 	} else {
 		return A2(
@@ -10829,11 +10813,11 @@ var _user$project$Main$view = function (model) {
 				_1: {
 					ctor: '::',
 					_0: function () {
-						var _p11 = model.records;
-						if (_p11.ctor === 'Nothing') {
+						var _p9 = model.records;
+						if (_p9.ctor === 'Nothing') {
 							return _elm_lang$html$Html$text('Authenticated, loading records...');
 						} else {
-							return A2(_user$project$Main$displayRecords, model, _p11._0);
+							return A2(_user$project$Main$displayRecords, model, _p9._0);
 						}
 					}(),
 					_1: {
@@ -10870,21 +10854,11 @@ var _user$project$Main$main = _elm_lang$html$Html$programWithFlags(
 				function (email) {
 					return A2(
 						_elm_lang$core$Json_Decode$andThen,
-						function (kintoBucket) {
-							return A2(
-								_elm_lang$core$Json_Decode$andThen,
-								function (kintoCollection) {
-									return A2(
-										_elm_lang$core$Json_Decode$andThen,
-										function (kintoServer) {
-											return _elm_lang$core$Json_Decode$succeed(
-												{bearer: bearer, email: email, kintoBucket: kintoBucket, kintoCollection: kintoCollection, kintoServer: kintoServer});
-										},
-										A2(_elm_lang$core$Json_Decode$field, 'kintoServer', _elm_lang$core$Json_Decode$string));
-								},
-								A2(_elm_lang$core$Json_Decode$field, 'kintoCollection', _elm_lang$core$Json_Decode$string));
+						function (redirectUrl) {
+							return _elm_lang$core$Json_Decode$succeed(
+								{bearer: bearer, email: email, redirectUrl: redirectUrl});
 						},
-						A2(_elm_lang$core$Json_Decode$field, 'kintoBucket', _elm_lang$core$Json_Decode$string));
+						A2(_elm_lang$core$Json_Decode$field, 'redirectUrl', _elm_lang$core$Json_Decode$string));
 				},
 				A2(
 					_elm_lang$core$Json_Decode$field,
