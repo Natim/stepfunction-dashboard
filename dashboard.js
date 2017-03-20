@@ -10291,58 +10291,65 @@ var _user$project$Main$displayRecord = F2(
 						_0: A2(
 							_elm_lang$html$Html$td,
 							{ctor: '[]'},
-							{
-								ctor: '::',
-								_0: A2(
-									_elm_lang$html$Html$div,
-									{
-										ctor: '::',
-										_0: _elm_lang$html$Html_Attributes$class('btn-group'),
-										_1: {ctor: '[]'}
-									},
-									{
+							function () {
+								var _p1 = record.status;
+								if (_p1.ctor === 'Nothing') {
+									return {
 										ctor: '::',
 										_0: A2(
-											_elm_lang$html$Html$button,
+											_elm_lang$html$Html$div,
 											{
 												ctor: '::',
-												_0: _elm_lang$html$Html_Attributes$class('btn btn-success'),
-												_1: {
-													ctor: '::',
-													_0: _elm_lang$html$Html_Events$onClick(
-														_user$project$Main$AcceptStep(record.id)),
-													_1: {ctor: '[]'}
-												}
+												_0: _elm_lang$html$Html_Attributes$class('btn-group'),
+												_1: {ctor: '[]'}
 											},
 											{
 												ctor: '::',
-												_0: _elm_lang$html$Html$text('Accept'),
-												_1: {ctor: '[]'}
-											}),
-										_1: {
-											ctor: '::',
-											_0: A2(
-												_elm_lang$html$Html$button,
-												{
-													ctor: '::',
-													_0: _elm_lang$html$Html_Attributes$class('btn btn-danger'),
-													_1: {
+												_0: A2(
+													_elm_lang$html$Html$button,
+													{
 														ctor: '::',
-														_0: _elm_lang$html$Html_Events$onClick(
-															_user$project$Main$RejectStep(record.id)),
+														_0: _elm_lang$html$Html_Attributes$class('btn btn-success'),
+														_1: {
+															ctor: '::',
+															_0: _elm_lang$html$Html_Events$onClick(
+																_user$project$Main$AcceptStep(record.id)),
+															_1: {ctor: '[]'}
+														}
+													},
+													{
+														ctor: '::',
+														_0: _elm_lang$html$Html$text('Accept'),
 														_1: {ctor: '[]'}
-													}
-												},
-												{
+													}),
+												_1: {
 													ctor: '::',
-													_0: _elm_lang$html$Html$text('Reject'),
+													_0: A2(
+														_elm_lang$html$Html$button,
+														{
+															ctor: '::',
+															_0: _elm_lang$html$Html_Attributes$class('btn btn-danger'),
+															_1: {
+																ctor: '::',
+																_0: _elm_lang$html$Html_Events$onClick(
+																	_user$project$Main$RejectStep(record.id)),
+																_1: {ctor: '[]'}
+															}
+														},
+														{
+															ctor: '::',
+															_0: _elm_lang$html$Html$text('Reject'),
+															_1: {ctor: '[]'}
+														}),
 													_1: {ctor: '[]'}
-												}),
-											_1: {ctor: '[]'}
-										}
-									}),
-								_1: {ctor: '[]'}
-							}),
+												}
+											}),
+										_1: {ctor: '[]'}
+									};
+								} else {
+									return {ctor: '[]'};
+								}
+							}()),
 						_1: {ctor: '[]'}
 					}
 				}
@@ -10350,8 +10357,8 @@ var _user$project$Main$displayRecord = F2(
 	});
 var _user$project$Main$displayRecords = F2(
 	function (model, records) {
-		var _p1 = model.error;
-		if (_p1.ctor === 'Nothing') {
+		var _p2 = model.error;
+		if (_p2.ctor === 'Nothing') {
 			return A2(
 				_elm_lang$html$Html$table,
 				{
@@ -10427,7 +10434,7 @@ var _user$project$Main$displayRecords = F2(
 				{ctor: '[]'},
 				{
 					ctor: '::',
-					_0: _elm_lang$html$Html$text(_p1._0),
+					_0: _elm_lang$html$Html$text(_p2._0),
 					_1: {ctor: '[]'}
 				});
 		}
@@ -10437,14 +10444,14 @@ var _user$project$Main$FetchRecordsResponse = function (a) {
 	return {ctor: 'FetchRecordsResponse', _0: a};
 };
 var _user$project$Main$fetchRecordList = function (model) {
-	var _p2 = model.bearer;
-	if (_p2.ctor === 'Nothing') {
+	var _p3 = model.bearer;
+	if (_p3.ctor === 'Nothing') {
 		return _elm_lang$core$Platform_Cmd$none;
 	} else {
 		var client = A2(
 			_Kinto$elm_kinto$Kinto$client,
 			model.kintoServer,
-			A2(_Kinto$elm_kinto$Kinto$Custom, 'Portier', _p2._0));
+			A2(_Kinto$elm_kinto$Kinto$Custom, 'Portier', _p3._0));
 		return A2(
 			_Kinto$elm_kinto$Kinto$send,
 			_user$project$Main$FetchRecordsResponse,
@@ -10463,21 +10470,21 @@ var _user$project$Main$fetchRecordList = function (model) {
 };
 var _user$project$Main$update = F2(
 	function (message, model) {
-		var _p3 = message;
-		switch (_p3.ctor) {
+		var _p4 = message;
+		switch (_p4.ctor) {
 			case 'NewEmail':
-				var _p4 = _p3._0;
+				var _p5 = _p4._0;
 				return A2(
 					_elm_lang$core$Platform_Cmd_ops['!'],
 					_elm_lang$core$Native_Utils.update(
 						model,
-						{email: _p4}),
+						{email: _p5}),
 					{
 						ctor: '::',
 						_0: _user$project$Main$saveData(
 							{
 								key: 'email',
-								value: _elm_lang$core$Json_Encode$string(_p4)
+								value: _elm_lang$core$Json_Encode$string(_p5)
 							}),
 						_1: {ctor: '[]'}
 					});
@@ -10491,8 +10498,8 @@ var _user$project$Main$update = F2(
 						_1: {ctor: '[]'}
 					});
 			case 'LoadRecords':
-				var _p5 = model.bearer;
-				if (_p5.ctor === 'Nothing') {
+				var _p6 = model.bearer;
+				if (_p6.ctor === 'Nothing') {
 					return A2(
 						_elm_lang$core$Platform_Cmd_ops['!'],
 						model,
@@ -10514,13 +10521,13 @@ var _user$project$Main$update = F2(
 						});
 				}
 			case 'FetchRecordsResponse':
-				if (_p3._0.ctor === 'Ok') {
+				if (_p4._0.ctor === 'Ok') {
 					return A2(
 						_elm_lang$core$Platform_Cmd_ops['!'],
 						_elm_lang$core$Native_Utils.update(
 							model,
 							{
-								records: _elm_lang$core$Maybe$Just(_p3._0._0),
+								records: _elm_lang$core$Maybe$Just(_p4._0._0),
 								error: _elm_lang$core$Maybe$Nothing
 							}),
 						{ctor: '[]'});
@@ -10531,7 +10538,7 @@ var _user$project$Main$update = F2(
 							model,
 							{
 								error: _elm_lang$core$Maybe$Just(
-									_elm_lang$core$Basics$toString(_p3._0._0))
+									_elm_lang$core$Basics$toString(_p4._0._0))
 							}),
 						{ctor: '[]'});
 				}
@@ -10553,7 +10560,7 @@ var _user$project$Main$update = F2(
 					model,
 					{
 						ctor: '::',
-						_0: A3(_user$project$Main$answerStep, model, _p3._0, 'SUCCEED'),
+						_0: A3(_user$project$Main$answerStep, model, _p4._0, 'SUCCEED'),
 						_1: {ctor: '[]'}
 					});
 			case 'RejectStep':
@@ -10562,18 +10569,18 @@ var _user$project$Main$update = F2(
 					model,
 					{
 						ctor: '::',
-						_0: A3(_user$project$Main$answerStep, model, _p3._0, 'FAIL'),
+						_0: A3(_user$project$Main$answerStep, model, _p4._0, 'FAIL'),
 						_1: {ctor: '[]'}
 					});
 			case 'AnswerResponse':
-				if (_p3._0.ctor === 'Err') {
+				if (_p4._0.ctor === 'Err') {
 					return A2(
 						_elm_lang$core$Platform_Cmd_ops['!'],
 						_elm_lang$core$Native_Utils.update(
 							model,
 							{
 								error: _elm_lang$core$Maybe$Just(
-									_elm_lang$core$Basics$toString(_p3._0._0))
+									_elm_lang$core$Basics$toString(_p4._0._0))
 							}),
 						{ctor: '[]'});
 				} else {
@@ -10775,8 +10782,8 @@ var _user$project$Main$formView = function (model) {
 		});
 };
 var _user$project$Main$view = function (model) {
-	var _p6 = model.bearer;
-	if (_p6.ctor === 'Nothing') {
+	var _p7 = model.bearer;
+	if (_p7.ctor === 'Nothing') {
 		return _user$project$Main$formView(model);
 	} else {
 		return A2(
@@ -10795,11 +10802,11 @@ var _user$project$Main$view = function (model) {
 				_1: {
 					ctor: '::',
 					_0: function () {
-						var _p7 = model.records;
-						if (_p7.ctor === 'Nothing') {
+						var _p8 = model.records;
+						if (_p8.ctor === 'Nothing') {
 							return _elm_lang$html$Html$text('Authenticated, loading records...');
 						} else {
-							return A2(_user$project$Main$displayRecords, model, _p7._0);
+							return A2(_user$project$Main$displayRecords, model, _p8._0);
 						}
 					}(),
 					_1: {
