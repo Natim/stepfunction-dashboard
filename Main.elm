@@ -133,8 +133,19 @@ update message model =
             }
                 ! []
 
+        FetchRecordsResponse (Err (Kinto.KintoError 403 _ error)) ->
+            { model
+                | records = Just []
+                , error = Nothing
+            }
+                ! []
+
         FetchRecordsResponse (Err error) ->
-            { model | error = Just <| toString error } ! []
+            let
+                _ =
+                    Debug.log "Yo" error
+            in
+                { model | error = Just <| toString error } ! []
 
         Logout ->
             { model
@@ -299,16 +310,21 @@ displayRecords : Model -> List Record -> Html.Html Msg
 displayRecords model records =
     case model.error of
         Nothing ->
-            Html.table [ Html.Attributes.class "table" ]
-                [ Html.thead [ Html.Attributes.class "thead-inverse" ]
-                    [ Html.tr []
-                        [ Html.th [] [ Html.text "Subject" ]
-                        , Html.th [] [ Html.text "Status" ]
-                        , Html.th [] [ Html.text "Actions" ]
+            case records of
+                [] ->
+                    Html.h4 [] [ Html.text "No step function needing your attention." ]
+
+                _ ->
+                    Html.table [ Html.Attributes.class "table" ]
+                        [ Html.thead [ Html.Attributes.class "thead-inverse" ]
+                            [ Html.tr []
+                                [ Html.th [] [ Html.text "Subject" ]
+                                , Html.th [] [ Html.text "Status" ]
+                                , Html.th [] [ Html.text "Actions" ]
+                                ]
+                            ]
+                        , Html.tbody [] <| List.map (displayRecord model) records
                         ]
-                    ]
-                , Html.tbody [] <| List.map (displayRecord model) records
-                ]
 
         Just error ->
             Html.pre [] [ Html.text error ]
