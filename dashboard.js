@@ -10452,7 +10452,9 @@ var _user$project$Main$update = F2(
 					_elm_lang$core$Platform_Cmd_ops['!'],
 					_elm_lang$core$Native_Utils.update(
 						model,
-						{email: _p6}),
+						{
+							email: _elm_lang$core$Maybe$Just(_p6)
+						}),
 					{
 						ctor: '::',
 						_0: _user$project$Main$saveData(
@@ -10585,16 +10587,7 @@ var _user$project$Main$update = F2(
 	});
 var _user$project$Main$LoadRecords = {ctor: 'LoadRecords'};
 var _user$project$Main$init = function (flags) {
-	var model = {
-		email: A2(_elm_lang$core$Maybe$withDefault, '', flags.email),
-		bearer: flags.bearer,
-		records: _elm_lang$core$Maybe$Nothing,
-		error: _elm_lang$core$Maybe$Nothing,
-		redirectUrl: flags.redirectUrl,
-		kintoServer: _user$project$Main$kintoServer,
-		kintoBucket: _user$project$Main$kintoBucket,
-		kintoCollection: _user$project$Main$kintoCollection
-	};
+	var model = {email: flags.email, bearer: flags.bearer, records: _elm_lang$core$Maybe$Nothing, error: _elm_lang$core$Maybe$Nothing, redirectUrl: flags.redirectUrl, kintoServer: _user$project$Main$kintoServer, kintoBucket: _user$project$Main$kintoBucket, kintoCollection: _user$project$Main$kintoCollection};
 	return A2(_user$project$Main$update, _user$project$Main$LoadRecords, model);
 };
 var _user$project$Main$NewEmail = function (a) {
@@ -10713,7 +10706,8 @@ var _user$project$Main$formView = function (model) {
 																			_0: _elm_lang$html$Html_Attributes$placeholder('john.doe@tld.com'),
 																			_1: {
 																				ctor: '::',
-																				_0: _elm_lang$html$Html_Attributes$value(model.email),
+																				_0: _elm_lang$html$Html_Attributes$value(
+																					A2(_elm_lang$core$Maybe$withDefault, '', model.email)),
 																				_1: {
 																					ctor: '::',
 																					_0: _elm_lang$html$Html_Attributes$type_('email'),
