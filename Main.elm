@@ -10,6 +10,19 @@ import Kinto
 import Time exposing (Time, minute)
 
 
+kintoServer =
+    "https://kinto.dev.mozaws.net/v1"
+
+
+kintoBucket =
+    "stepfunction"
+
+
+kintoCollection =
+    "manual_steps"
+
+
+
 -- Model
 
 
@@ -20,9 +33,7 @@ type alias Url =
 type alias Flags =
     { email : Maybe String
     , bearer : Maybe Bearer
-    , kintoServer : String
-    , kintoBucket : String
-    , kintoCollection : String
+    , redirectUrl : String
     }
 
 
@@ -31,6 +42,7 @@ type alias Model =
     , bearer : Maybe Bearer
     , records : Maybe (List Record)
     , error : Maybe String
+    , redirectUrl : String
     , kintoServer : String
     , kintoBucket : String
     , kintoCollection : String
@@ -61,7 +73,6 @@ type alias Record =
 
 type Msg
     = NewEmail String
-    | Authenticate
     | LoadRecords
     | FetchRecordsResponse (Result Kinto.Error (List Record))
     | Logout
@@ -83,9 +94,10 @@ init flags =
             , bearer = flags.bearer
             , records = Nothing
             , error = Nothing
-            , kintoServer = flags.kintoServer
-            , kintoBucket = flags.kintoBucket
-            , kintoCollection = flags.kintoCollection
+            , redirectUrl = flags.redirectUrl
+            , kintoServer = kintoServer
+            , kintoBucket = kintoBucket
+            , kintoCollection = kintoCollection
             }
     in
         update LoadRecords model
@@ -110,9 +122,6 @@ update message model =
         NewEmail email ->
             { model | email = email }
                 ! [ saveData { key = "email", value = Encode.string email } ]
-
-        Authenticate ->
-            model ! [ authenticate model.email ]
 
         LoadRecords ->
             case model.bearer of
@@ -255,7 +264,8 @@ formView model =
             [ Html.form
                 [ Html.Attributes.id "authenticate-form"
                 , Html.Attributes.class "text-left"
-                , Html.Events.onSubmit Authenticate
+                , Html.Attributes.method "POST"
+                , Html.Attributes.action (model.kintoServer ++ "/portier/login")
                 ]
                 [ Html.div [ Html.Attributes.class "main-login-form" ]
                     [ Html.div [ Html.Attributes.class "login-group" ]
@@ -271,7 +281,14 @@ formView model =
                                 , Html.Attributes.placeholder "john.doe@tld.com"
                                 , Html.Attributes.value model.email
                                 , Html.Attributes.type_ "email"
+                                , Html.Attributes.name "email"
                                 , Html.Events.onInput NewEmail
+                                ]
+                                []
+                            , Html.input
+                                [ Html.Attributes.name "redirect"
+                                , Html.Attributes.value model.redirectUrl
+                                , Html.Attributes.type_ "hidden"
                                 ]
                                 []
                             ]
@@ -379,13 +396,6 @@ main =
         , update = update
         , view = view
         }
-
-
-
--- Oauth Flow
-
-
-port authenticate : String -> Cmd msg
 
 
 
