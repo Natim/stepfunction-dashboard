@@ -141,11 +141,11 @@ update message model =
                 ! []
 
         FetchRecordsResponse (Err error) ->
-            let
-                _ =
-                    Debug.log "Yo" error
-            in
-                { model | error = Just <| toString error } ! []
+            { model
+                | error = Just <| toString error
+                , records = Nothing
+            }
+                ! []
 
         Logout ->
             { model
@@ -177,26 +177,8 @@ update message model =
 
 answerUrl : String -> String -> String -> String -> Url
 answerUrl baseUrl bucketName collectionName recordId =
-    let
-        url =
-            if String.endsWith "/" baseUrl then
-                String.dropRight 1 baseUrl
-            else
-                baseUrl
-
-        joinUrl =
-            String.join "/"
-    in
-        joinUrl
-            [ url
-            , "buckets"
-            , bucketName
-            , "collections"
-            , collectionName
-            , "records"
-            , recordId
-            , "stepfunction"
-            ]
+    (Kinto.endpointUrl baseUrl (Kinto.RecordEndpoint bucketName collectionName recordId))
+        ++ "/stepfunction"
 
 
 answerResource : String -> String -> String -> Encode.Value -> Kinto.Client -> HttpBuilder.RequestBuilder ()
@@ -238,16 +220,14 @@ fetchRecordList model =
             let
                 client =
                     Kinto.client model.kintoServer (Kinto.Custom "Portier" bearer)
+
+                recordResource =
+                    Kinto.recordResource model.kintoBucket model.kintoCollection decodeRecord
             in
                 client
-                    |> Kinto.getList (recordResource model.kintoBucket model.kintoCollection)
+                    |> Kinto.getList recordResource
                     |> Kinto.sortBy [ "last_modified" ]
                     |> Kinto.send FetchRecordsResponse
-
-
-recordResource : String -> String -> Kinto.Resource Record
-recordResource bucketName collectionName =
-    Kinto.recordResource bucketName collectionName decodeRecord
 
 
 decodeRecord : Decode.Decoder Record
@@ -290,6 +270,7 @@ formView model =
                                 , Html.Attributes.id "fp_email"
                                 , Html.Attributes.placeholder "john.doe@tld.com"
                                 , Html.Attributes.value model.email
+                                , Html.Attributes.type_ "email"
                                 , Html.Events.onInput NewEmail
                                 ]
                                 []
@@ -341,7 +322,7 @@ displayRecord model record =
         [ Html.td
             [ Html.Attributes.title (recordTitle record) ]
             [ Html.text (Maybe.withDefault record.id record.subject) ]
-        , Html.td [] [ Html.text (String.toUpper (Maybe.withDefault "UNANSWERED" record.status)) ]
+        , Html.td [] [ Html.text (Maybe.withDefault "UNANSWERED" record.status) ]
         , Html.td [] <|
             case record.status of
                 Nothing ->
