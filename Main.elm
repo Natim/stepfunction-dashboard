@@ -38,7 +38,7 @@ type alias Flags =
 
 
 type alias Model =
-    { email : String
+    { email : Maybe String
     , bearer : Maybe Bearer
     , records : Maybe (List Record)
     , error : Maybe String
@@ -90,7 +90,7 @@ init : Flags -> ( Model, Cmd Msg )
 init flags =
     let
         model =
-            { email = Maybe.withDefault "" flags.email
+            { email = flags.email
             , bearer = flags.bearer
             , records = Nothing
             , error = Nothing
@@ -120,7 +120,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
     case message of
         NewEmail email ->
-            { model | email = email }
+            { model | email = Just email }
                 ! [ saveData { key = "email", value = Encode.string email } ]
 
         LoadRecords ->
@@ -279,7 +279,7 @@ formView model =
                                 [ Html.Attributes.class "form-control"
                                 , Html.Attributes.id "fp_email"
                                 , Html.Attributes.placeholder "john.doe@tld.com"
-                                , Html.Attributes.value model.email
+                                , Html.Attributes.value (Maybe.withDefault "" model.email)
                                 , Html.Attributes.type_ "email"
                                 , Html.Attributes.name "email"
                                 , Html.Events.onInput NewEmail
