@@ -10553,7 +10553,7 @@ var _user$project$Main$update = F2(
 					model,
 					{
 						ctor: '::',
-						_0: A3(_user$project$Main$answerStep, model, _p3._0, 'succeed'),
+						_0: A3(_user$project$Main$answerStep, model, _p3._0, 'SUCCEED'),
 						_1: {ctor: '[]'}
 					});
 			case 'RejectStep':
@@ -10562,7 +10562,7 @@ var _user$project$Main$update = F2(
 					model,
 					{
 						ctor: '::',
-						_0: A3(_user$project$Main$answerStep, model, _p3._0, 'fail'),
+						_0: A3(_user$project$Main$answerStep, model, _p3._0, 'FAIL'),
 						_1: {ctor: '[]'}
 					});
 			case 'AnswerResponse':
