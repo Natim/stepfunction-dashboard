@@ -326,20 +326,25 @@ displayRecord model record =
             [ Html.Attributes.title (recordTitle record) ]
             [ Html.text (Maybe.withDefault record.id record.subject) ]
         , Html.td [] [ Html.text (String.toUpper (Maybe.withDefault "UNANSWERED" record.status)) ]
-        , Html.td []
-            [ Html.div [ Html.Attributes.class "btn-group" ]
-                [ Html.button
-                    [ Html.Attributes.class "btn btn-success"
-                    , Html.Events.onClick (AcceptStep record.id)
+        , Html.td [] <|
+            case record.status of
+                Nothing ->
+                    [ Html.div [ Html.Attributes.class "btn-group" ]
+                        [ Html.button
+                            [ Html.Attributes.class "btn btn-success"
+                            , Html.Events.onClick (AcceptStep record.id)
+                            ]
+                            [ Html.text "Accept" ]
+                        , Html.button
+                            [ Html.Attributes.class "btn btn-danger"
+                            , Html.Events.onClick (RejectStep record.id)
+                            ]
+                            [ Html.text "Reject" ]
+                        ]
                     ]
-                    [ Html.text "Accept" ]
-                , Html.button
-                    [ Html.Attributes.class "btn btn-danger"
-                    , Html.Events.onClick (RejectStep record.id)
-                    ]
-                    [ Html.text "Reject" ]
-                ]
-            ]
+
+                Just status ->
+                    []
         ]
 
 
